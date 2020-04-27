@@ -18,8 +18,8 @@ repo --name=updates --mirrorlist=https://mirrors.fedoraproject.org/mirrorlist?re
 #repo --name=updates-testing --mirrorlist=https://mirrors.fedoraproject.org/mirrorlist?repo=updates-testing-f$releasever&arch=$basearch
 repo --name=enarx --baseurl=https://download.copr.fedorainfracloud.org/results/npmccallum/enarx/fedora-$releasever-$basearch/
 
-group --name=sgx
-group --name=sev
+group --name=sgx --gid=300
+group --name=sev --gid=301
 
 ## User Policy
 ## 1. User names MUST match GitHub accounts
