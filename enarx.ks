@@ -90,10 +90,88 @@ Type=ether
 [Network]
 DHCP=yes
 EOF
+
+get_maj_min() {
+    local _majmin
+    _majmin="$(stat -L -c '%t:%T' "$1" 2>/dev/null)"
+    printf "%s" "$((0x${_majmin%:*})):$((0x${_majmin#*:}))"
+}
+
+# give the /srv luks partition a partition label
+if ! [[ -b /dev/disk/by-partlabel/srv ]]; then
+   luksdev=/dev/$(ls -1 /sys/dev/block/$(get_maj_min /dev/disk/by-label/srv)/slaves)
+
+   # label the srv partition for later
+   sfdisk --part-label \
+       /dev/block/$(cat /sys/dev/block/$(get_maj_min $luksdev)/../dev) \
+       $(cat /sys/dev/block/$(get_maj_min "$luksdev")/partition) \
+       srv
+else
+   luksdev=/dev/disk/by-partlabel/srv
+fi
+
+# add /srv to /etc/fstab on reinstall
+if ! grep -q "/srv" /etc/fstab; then
+   echo "LABEL=srv /srv xfs defaults 0 0" >> /etc/fstab
+
+   # reconstruct /etc/crypttab
+   for i in /dev/disk/by-uuid/*; do
+       [[ -b "$i" ]] || continue;
+       [[ "$i" -ef "$luksdev" ]] || continue
+       uuid=${i#/dev/disk/by-uuid/}
+       echo "luks-$uuid UUID=$uuid none discard" > /etc/crypttab
+       break
+   done
+
+else
+
+   # umount /srv and close the luks device
+   if umount /srv &>/dev/null || ! mountpoint /srv &>/dev/null; then
+      cryptsetup close /dev/disk/by-label/srv &>/dev/null || :
+   fi
+
+   # bind /srv to the tpm
+   if ! clevis luks unlock -d "$luksdev"; then
+      clevis luks bind -f -k- -d "$luksdev" tpm2 '{}' <<< "temppass"
+      cryptsetup luksRemoveKey "$luksdev" <<< "temppass"
+      clevis luks unlock -d "$luksdev"
+   fi
+   udevadm settle
+   mount /srv
+fi
+
+
+# automatically unlock /srv via clevis
+cat > /etc/systemd/system/local-clevis-luks-askpass.path <<EOF
+[Unit]
+Description=Local Clevis systemd-ask-password Watcher
+DefaultDependencies=no
+Before=local-fs.target
+
+[Path]
+PathChanged=/run/systemd/ask-password
+
+[Install]
+WantedBy=local-fs.target
+EOF
+
+cat > /etc/systemd/system/local-clevis-luks-askpass.service <<EOF
+[Unit]
+Description=Local Clevis LUKS systemd-ask-password Responder
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/clevis-luks-askpass -l
+EOF
+
+systemctl enable local-clevis-luks-askpass.path
+
 %end
 
 %pre
-if [[ -b /dev/disk/by-label/boot ]] \
+if [[ -b /dev/disk/by-partlabel/srv ]] \
+   && [[ -b /dev/disk/by-label/boot ]] \
    && [[ -b /dev/disk/by-label/root ]] \
    && [[ -b /dev/disk/by-label/home ]] ; then
 
@@ -104,10 +182,11 @@ part /boot/efi --onpart=disk/by-partlabel/EFI\\\\x20System\\\\x20Partition --fst
 EOF
    fi
 
-   # standard layout, don't repartition and keep /home
+   # standard layout, don't repartition and keep /home and /srv
    cat >> /run/part-include <<EOF
 part /boot --label=boot --onpart=disk/by-label/boot --fstype xfs
 part /     --label=root --onpart=disk/by-label/root --fstype xfs
+part /srv  --label=srv  --onpart=disk/by-partlabel/srv --encrypted --noformat --passphrase=temppass
 part /home --label=home --onpart=disk/by-label/home --noformat
 EOF
 
@@ -120,6 +199,7 @@ clearpart  --all --initlabel --disklabel=gpt
 reqpart
 part /boot --label=boot --fstype xfs --size 512
 part /     --label=root --fstype xfs --size 20480
+part /srv  --label=srv  --fstype xfs --size 2048 --encrypted --passphrase=temppass
 part /home --label=home --fstype xfs --size 1 --grow
 EOF
 fi
