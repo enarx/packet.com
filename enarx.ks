@@ -10,7 +10,7 @@ reboot
 
 %include /run/part-include
 
-bootloader --timeout=1
+bootloader --timeout=1 --append="mem_encrypt=on"
 
 url --mirrorlist=https://mirrors.fedoraproject.org/mirrorlist?repo=fedora-$releasever&arch=$basearch
 repo --name=fedora --mirrorlist=https://mirrors.fedoraproject.org/mirrorlist?repo=fedora-$releasever&arch=$basearch
