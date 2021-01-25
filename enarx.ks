@@ -92,6 +92,8 @@ clang
 ccache
 
 openssl-devel
+perl-FindBin
+perl-File-Compare
 
 -dracut-config-generic
 -dracut-config-rescue
