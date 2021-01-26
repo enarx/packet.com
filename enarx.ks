@@ -62,6 +62,7 @@ sshkey --username=jyotsna-penumaka "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQD17cj0
 user --name=mikecamel --lock --uid=1012 --gid=1012
 sshkey --username=mikecamel "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC1Ut9aGFH6vJZ5fZ+e2XZj5ug0kXVzdHFi3E9Nsch4BlvGzU/iu45WaO8G270pk9XGc+AEyg7jgIq815uv2TDrA6Z6eGg0VWo49/ZGMsGaxUlynwki/BwI9ofcPimnFKPTCJnFD1NpE7zEO007UBS9kPRliM5NBXSfUxv5wmBF1b0Ylq/kokj3ndoMWFzYlHQ79Kp+n1DAlo+HRrzNLG3lfIJdfl4MguHGaHW6HtpmSL37XEd1PlJkiXGdpv3CdcLxxt7vbIGriSUe991I2bJLecvBxb9dQc/Z2OUd1H4GJc8pqywRqEvpui3U6ALVAevG7Xq6caTlwMF2q21GFyBzdeskUyO4PnuLuyyW4v16E8qRm2B07qorkgi2LAQRp68bIYP1NitR4s5cVZxILusqnqf1JyVxx26EZVE7VJaN5NIXMq8xI4y+gvogwHc0tbMrVrKtDpW8FzdQVN+CH5KQngevT5NHEY+yyKbcKB3KPUq07Xu7ITtIa3MQ+cbUiq8= mike@p2ptrust.org"
 
+
 %packages
 @hardware-support
 @core
